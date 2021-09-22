@@ -164,7 +164,7 @@
 /**
  * int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
  * 
- * @brief accept 用于从指定套接字的连接队列中去除第一个连接，病返回一个新的套接字用于于客户端进行通信。
+ * @brief accept 用于从指定套接字的连接队列中去除第一个连接，并返回一个新的套接字用于于客户端进行通信。
  * 
  * @param sockfd    处于监听状态的套接字
  * @param addr      用于保存对端的地址信息

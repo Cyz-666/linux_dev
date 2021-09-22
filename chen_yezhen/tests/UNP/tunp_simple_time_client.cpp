@@ -4,37 +4,64 @@
  * 直观可读格式简单地送回当前时间和日期。
 */
 
-#include    "unp.h"  
+
+#include	<netinet/in.h>	/* sockaddr_in{} and other Internet defns */
+#include	<arpa/inet.h>	/* inet(3) functions */
+#include	<errno.h>
+#include	<fcntl.h>		/* for nonblocking */
+#include	<netdb.h>
+#include	<signal.h>
+#include	<stdio.h>
+#include	<stdlib.h>
+#include	<string.h>
+#include	<sys/stat.h>	/* for S_xxx file mode constants */
+#include	<sys/uio.h>		/* for iovec{} and readv/writev */
+#include	<unistd.h>
+#include	<sys/wait.h>
+#include	<sys/un.h>		/* for Unix domain sockets */
   
+#include <iostream>
+using namespace std;
+
+#define MAXLINE 2048
+
 int  
 main(int argc, char **argv)  
 {  
     int                 sockfd, n;  
     char                recvline[MAXLINE + 1];  
     struct sockaddr_in  servaddr;  
-  
-    if (argc != 2)  
-        err_quit("usage: a.out <IPaddress>");  
-  
+
     if ( (sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)  
-        err_sys("socket error");  
+    {
+        cout << "on socket() error occur. " << endl;
+        return -1;   
+    } 
   
-    bzero(&servaddr, sizeof(servaddr));  
+    memset(&servaddr, 0, sizeof(servaddr));  
     servaddr.sin_family = AF_INET;  
-    servaddr.sin_port   = htons(13);    /* daytime server */  
-    if (inet_pton(AF_INET, argv[1], &servaddr.sin_addr) <= 0)  
-        err_quit("inet_pton error for %s", argv[1]);  
-  
-    if (connect(sockfd, (SA *) &servaddr, sizeof(servaddr)) < 0)  
-        err_sys("connect error");  
+    servaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    servaddr.sin_port   = htons(4000);    /* daytime server */  
+
+    if (connect(sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr)) < 0)  
+    {
+        cout << "on connect() error occur. " << endl;
+        return -1;   
+    }
   
     while ( (n = read(sockfd, recvline, MAXLINE)) > 0) {  
         recvline[n] = 0;    /* null terminate */  
         if (fputs(recvline, stdout) == EOF)  
-            err_sys("fputs error");  
+        {
+            cout << "on socket() error occur. " << endl;
+            return -1;   
+        }
     }  
     if (n < 0)  
-        err_sys("read error");  
+    {
+        cout << "read error occur. " << endl;
+        return -1;   
+    }
   
     exit(0);  
 }
