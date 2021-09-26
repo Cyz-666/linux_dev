@@ -192,11 +192,83 @@
 */
 
 /**
+ * int snprintf(char *str, size_t size, const char *format, ...);
+ * 
+ * @brief 由于 sprintf 不能检查目标字符串的长度，可能造成众多的安全问题，所以会推荐使用 snprintf
+ * 
+ * @param str 将格式化后的字符串写入的目标位置
+ * @param size 要写入的字符最大数组，如果超过 size 会被截断。
+ * @param format snprintf 设将可变参数(...) 按照 format 格式化成字符串，并将字符串复制到 str 中
+ * 
+ * @return  如果格式化后的字符串长度小于等于 size， 则会把字符串全部复制到 str 中，并给其后添加一个字符串结束符 '\0'
+ *          
+ *          如果格式化后的字符串长度大于 size， 超过 size 的部分会被截断，只将其中的 (size - 1)个字符复制到 str 中，
+ *          并给其后添加一个字符串结束符 '\0'，
+ *      
+ *          返回值为与写入的字符串长度。
+*/
+
+
+/**
+ * #include <sys/stat.h>   
+ * #include <unistd.h>
+ * 
  * int stat(const char *file_name, struct stat *buf); 
  * 
  * @brief stat函数用来将参数 file_name 所指的文件状态，复制到参数 buf 所指的结构中。
  * 
  * @param file_name 表示文件的路径
  * @param buf       表示声明的结构体
+ * @return 0 执行成功； -1 执行失败； 错误代码存于 errno 中。
+ * 错误码： 
+ * ENOENT   参数 file_name 指定的文件不存在
+ * ENOTDIR  路径中的目录存在但却非真正的目录
+ * ELOOP    欲打开的文件有过多符号连接问题，上限为 16 符号连接。
+ * EFAULT   参数 buf 为无效指针，指向无法存在的内存空间。
+ * EACCESS  存取文件时被拒绝
+ * ENOMEM   核心内存不足
+ * ENAMETOOLONG 参数 file_name 的路径名称太长
+ * 
+*/
+
+/**
+ * 数据发送系统调用接口
+ * #include <sys/types.h>
+ * #include <sys/socket.h>
+ * 
+ * ssize_t send(int sockfd, const void *buf, size_t len, int flags);
+ * ssize_t sendto(int sockfd, const void *buf, size_t len, int flags, 
+ *                  const struct sockaddr *dest_addr, socklen_t addrlen);
+ * ssize_t snedmsg(int sockfd, const struct msghdr *msg, int flags);
+ * 
+ * @brief send 只能用于处理已连接状态的套接字（无论 TCP 还是 UDP 都可以进行连接）。
+ *  sendto 可以在调用时，指定目的地址。这样的话，如果套接字已经是连接状态，那么目的地址 dest_addr
+ *  与地址长度就应该为 NULL 和 0，不然就可能会返回错误。
+ *  sendmsg 比较特殊，无论是要发送的数据还是目的地址，都保存在 msg 中。其中 msg.msg_name 和 msg.msg_len
+ *  用于指明目的地址，而msg.msg_iov 则用于保存要发送的数据。这三个系统调用都支持设置指示标志位 flags。
+ * 
+ * @note 说明： 稍微现代些的系统调用，一般都会拥有或保留一个指示标志参数。通过标志位 flags，可以
+ *  从容地为系统调用增加新功能，同时兼容老版本。
+ *  由于 socket 同时还是文件描述符，所以为文件提供的写操作（如 write() ）也可以被socket 套接字直接调用。
+ * 
+*/
+
+/**
+ * #include <sys/types.h>
+ * #include <sys/socket.h>
+ * 
+ * ssize_t recv(int sockfd, void *buf, size_t len, int flags);
+ * ssize_t recvfrom(int sockfd, void *buf, size_t len, int flags, 
+ *                  struct sockaddr *src_addr, socklen_t *addrlen);
+ * ssize_t recvmsg(int sockfd, struct msghdr *msg, int flags);
+ * 
+ * @brief 与 send 类似， recv一般也是面向连接的套接字。原因在于对于非面向连接的套接字来说，若使用
+ *  recv 接受数据，通过该接口将不能获得发送端的地址，也就是说不知道这个数据是谁发过来的。所以，如果
+ *  使用者不关心发送端信息，或者该信息可以从数据中获得，那么 recv 接口同样也可以用于非面向连接的套接字。
+ *      再来看 recvfrom，它会通过额外的参数 src_addr 和 addrlen，来获得发送方的地址，其中需要注意的值 addrlen，
+ *  它既是输入值又是输出值。
+ *      最后是 recvmsg，它与 sendmsg 一样，把接收到的数据和地址都保存在了 msg 中。
+ *  其中 msg.msg_name 和 msg.msg_len 用于保存接收端地址，而 msg.msg_iov 用于保存接收到的数据。
+ *      这三个系统调用与对应的发送接口一样，都支持设置标志位 flags -- 都是比较现代的接口涉及方法。
  * 
 */
